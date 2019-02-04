@@ -67,9 +67,9 @@ def window_detection(tensor, flow, window_size, num_frames):
         # calculate sum of dense flow for the windows
         for i in np.arange(0, vert - window_size[0], 5):
             for j in np.arange(0, horz - window_size[1], 5):
-                norms[int(i), int(j)] = np.sum(tensor[int(i):int(i) + window_size[0], int(j):int(j) + window_size[1], :])
-                norms[int(i), int(j)] = np.max(np.sum(
-                    tensor[int(i):int(i) + window_size[0], int(j):int(j) + window_size[1], :], axis=(1, 2)))
+                norms[int(i), int(j)] = np.sqrt(np.sum(np.square(tensor[int(i):int(i) + window_size[0],
+                                                                 int(j):int(j) + window_size[1],
+                                                                 :])))
 
     else:
         # calculate Frobenius norms for the windows on each frame and sum values
