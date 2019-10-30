@@ -12,7 +12,7 @@ from sklearn.decomposition import NMF
 
 class SegNNMF:
     def __init__(self, matrix3d, sparsity_coef, beta, epochs, learning_rate, d, dprime, batchsize, num_workers,
-                 save_loc, device, nmf_init):
+                 save_loc, device, nmf_init, s_nodes, s_layers, x_nodes, x_layers):
         self.matrix3d = matrix3d/255
         self.vert = matrix3d.shape[0]  # length of image width
         self.horz = matrix3d.shape[1]  # length of image height
@@ -21,7 +21,7 @@ class SegNNMF:
         self.d = d
         self.dprime = dprime
         self.matrix2d = self.tensor_to_matrix(self.matrix3d)
-        self.nnmf = NNMF(self.matrix2d, d, dprime)
+        self.nnmf = NNMF(self.matrix2d, d, dprime, s_nodes, s_layers, x_nodes, x_layers)
         self.epochs = epochs
         self.sparsity_coef = sparsity_coef
         self.beta = beta

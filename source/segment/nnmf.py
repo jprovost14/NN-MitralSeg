@@ -4,7 +4,7 @@ import numpy as np
 
 
 class NNMF(nn.Module):
-    def __init__(self, matrix2d, d, dprime):
+    def __init__(self, matrix2d, d, dprime, s_nodes, s_layers, x_nodes, x_layers):
         super(NNMF, self).__init__()
 
         self.input_size = 2*d + dprime
@@ -12,6 +12,12 @@ class NNMF(nn.Module):
         self.num_frames = matrix2d.shape[1]
 
         self.dprime = dprime
+
+        self.s_nodes = s_nodes
+        self.s_layers = s_layers
+
+        self.x_nodes = x_nodes
+        self.x_layers = x_layers
 
         if d != 0:
             self.U = nn.Embedding(self.num_pixels, d)
@@ -28,23 +34,31 @@ class NNMF(nn.Module):
         self.ReLU = nn.ReLU()
         self.Sigmoid = nn.Sigmoid()
 
-        self.mlp_s = nn.Sequential(
-            nn.Linear(1, 10),
-            nn.ReLU(),
-            nn.Linear(10, 10),
-            nn.ReLU(),
-            nn.Linear(10, 10),
-            nn.ReLU(),
-            nn.Linear(10, 1),
-            nn.Sigmoid()
-        )
+        self.mlp_s = nn.ModuleList([nn.Linear(self.s_nodes, self.s_nodes) for j in range(self.s_layers)])
+        self.fc1 = nn.Linear(self.s_nodes, 1)
 
-        self.mlp = nn.Sequential(
-            nn.Linear(self.input_size, 1),
-            nn.ReLU(),
-            nn.Linear(1, 1),
-            nn.Sigmoid()
-        )
+        # self.mlp_s = nn.Sequential(
+        #     nn.Linear(1, 10),
+        #     nn.ReLU(),
+        #     nn.Linear(10, 10),
+        #     nn.ReLU(),
+        #     nn.Linear(10, 10),
+        #     nn.ReLU(),
+        #     nn.Linear(10, 1),
+        #     nn.Sigmoid()
+        # )
+
+        self.mlp_x = nn.ModuleList([nn.Linear(self.x_nodes, self.x_nodes) for j in range(self.x_layers)])
+        self.fc2 = nn.Linear(self.x_nodes, 1)
+
+        # self.mlp = nn.Sequential(
+        #     nn.Linear(self.input_size, 1),
+        #     nn.ReLU(),
+        #     nn.Linear(1, 1),
+        #     nn.Sigmoid()
+        # )
+
+    # TODO Fix neural network initialization
 
     def init_params(self, NMF=None):
 
@@ -52,7 +66,7 @@ class NNMF(nn.Module):
             def init_weights(m):
                 if type(m) == nn.Sequential:
                     try:
-                        nn.init.xavier_uniform_(m.weight.data, gain=4)
+                        nn.init.xavier_normal_(m.weight.data, gain=2)
                     except:
                         pass
                     try:
@@ -63,8 +77,6 @@ class NNMF(nn.Module):
                 elif type(m) == nn.Embedding:
                     if NMF is None:
                         try:
-                            # nn.init.xavier_uniform_(m.weight.data, gain=2)
-                            # nn.init.xavier_normal_(m.weight.data, gain=3)
                             nn.init.normal_(m.weight.data, mean=0.5, std=0.01)
                         except:
                             pass
@@ -120,9 +132,18 @@ class NNMF(nn.Module):
             mlp_input = torch.cat((self.U(pixel), self.V(frame), dot_prod), dim=1)
         else:
             mlp_input = dot_prod
-        x_out = self.mlp(mlp_input)
+
+        for i in range(len(self.mlp_x)):
+            mlp_input = self.mlp_x[i](mlp_input)
+
+        x_out = self.Sigmoid(self.fc1(mlp_input))
+
         s_input = target - x_out
-        s_out = self.mlp_s(s_input)
+
+        for i in range(len(self.mlp_s)):
+            s_input = self.mlp_s[i](s_input)
+
+        s_out = self.Sigmoid(self.fc2(s_input))
 
         del mlp_input
         del dot_prod

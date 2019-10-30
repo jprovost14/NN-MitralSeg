@@ -87,5 +87,9 @@ def window_detection(tensor, flow, window_size, num_frames):
     mask = np.zeros(shape=(vert, horz, m))
     hgt_ind, wdh_ind = window_index
     mask[hgt_ind:(hgt_ind + window_size[0]), wdh_ind:(wdh_ind + window_size[1]), :] = 1
-    # mask[hgt_ind:(hgt_ind + window_size[0]), wdh_ind:(wdh_ind + window_size[1]), :] = 1
     return mask
+
+def get_free_gpu():
+    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+    memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+    return np.argmax(memory_available)
